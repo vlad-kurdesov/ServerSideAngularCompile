@@ -24,10 +24,10 @@ function guid() {
     s4() + '-' + s4() + s4() + s4();
 }
 
-var contentsTemplate = fs.readFileSync('index.html', 'ascii');
-var indexPage = fs.readFileSync('testClient.html', 'ascii');
+var contentsTemplate = fs.readFileSync('template\\angularjs.1.6.1.html', 'ascii');
+var indexPage = fs.readFileSync('index.html', 'ascii');
 
-var tempDir = __dirname;
+var tempDir = __dirname + "\\temp";
 
 app.get('/', function(req, res){
   res.send(indexPage);
@@ -45,6 +45,16 @@ app.post('/compile', function (req, res) {
   var browser = new Browser();
   browser.visit('file://'+tempFilePath, function(a){
     var compiledTemplate = browser.html('body');
+
+    //if(!browser.assert.success()){
+
+    //  res.send(JSON.stringify({
+    //    error: "Error compiling template!"
+    //  }));
+
+    //  fs.unlink(tempFilePath);
+    //  return;  
+    //}
 
     var index = compiledTemplate.indexOf('>');
     compiledTemplate = compiledTemplate.substr(index+2,compiledTemplate.length-index-11);
@@ -68,4 +78,4 @@ app.listen(3000, function () {
   console.log('Server launched on port 3000!')
 })
 
-open('http://localhost:3000');
+open('http://127.0.0.1:3000');

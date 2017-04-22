@@ -1,0 +1,17 @@
+<html ng-app="myApp">
+<head>
+<script type="text/javascript" src="../lib/angular.1.6.1.min.js"></script>
+<script>
+var app = angular.module("myApp", []);
+app.controller("myCtrl", function($scope) {
+	var variable = %variable%;
+	for(var i in variable){
+		$scope[i] = variable[i];
+	}
+});
+</script>
+</head>
+<body ng-controller="myCtrl">
+%text%
+</body>
+</html>
