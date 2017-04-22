@@ -1,0 +1,72 @@
+<html ng-app="myApp">
+<head>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.1/angular.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.1/angular-sanitize.min.js"></script>
+</head>
+<body ng-controller="myCtrl">
+Template:<br/> 
+<textarea ng-model="template"></textarea>
+<hr/>
+Variable:<br/> 
+<textarea ng-model="variable"></textarea>
+<hr/>
+<button ng-click="send()">Send</button>
+<hr/>
+Result:<br/> 
+{{result}}
+<hr>
+<div ng-bind-html="resultHtml"></div>
+<hr/>
+<button ng-click="loadTest()">Load Test</button>
+<hr/>
+<div ng-repeat="item in loadTestResult">{{item}}</div>
+<script>
+var app = angular.module("myApp", ['ngSanitize']);
+app.controller("myCtrl", function($scope, $http,$sce) {
+	$scope.template = 'OrderId: {{orderId}}<br/>\
+OrderDate: {{orderDate|date:"short"}}<br/>\
+<br/>\
+<div ng-repeat="item in items">\
+{{item.sku}} - {{item.title}}\
+</div>';
+	$scope.variable = '{\
+"orderId":234234,\
+"orderDate": "2017-02-03",\
+"items": [\
+{ "sku": "test1", "title": "Test Product 1" },\
+{ "sku": "test2", "title": "Test Product 2" },\
+{ "sku": "test3", "title": "Test Product 3" },\
+]}';
+	$scope.result = 'not sent yet';
+	$scope.send = function(){
+		$http.post('/compile', {
+			template: $scope.template||"",
+			variable: $scope.variable
+		})
+			.then((resp)=>{
+				$scope.result = JSON.stringify(resp.data);
+				$scope.resultHtml = $sce.trustAsHtml(resp.data.result);
+			});
+	}
+	$scope.loadTestResult = [];
+	var loadTestIdx = 1;
+	var loadTestIteration = function(){
+		var template = "Index: {{v}}; Date: {{d}}";
+		var variable = {"v":loadTestIdx++,"d":Date.now()};
+		$http.post('/compile', {
+			template: template,
+			variable: JSON.stringify(variable)
+		})
+			.then((resp)=>{
+				$scope.loadTestResult.push(JSON.stringify(resp.data));
+			});	
+	}
+	$scope.loadTest = function(){
+		for(var i = 0 ; i < 100; i++){
+			loadTestIteration();
+		}
+	}
+});
+</script>
+</body>
+</html>
