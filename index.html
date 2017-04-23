@@ -1,17 +1,37 @@
 <html ng-app="myApp">
 <head>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.1/angular.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.1/angular-sanitize.min.js"></script>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
 </head>
-<body ng-controller="myCtrl">
-Template:<br/> 
-<textarea ng-model="template"></textarea>
-<hr/>
-Variable:<br/> 
-<textarea ng-model="variable"></textarea>
-<hr/>
-<button ng-click="send()">Send</button>
-<hr/>
+<body class="container" ng-controller="myCtrl">
+
+<h4>ServerSideAngularCompile Server</h4>
+
+<div class="panel panel-default">
+<div class="panel-heading">Template</div>
+<div class="panel-body">
+<textarea ng-model="template" class="form-control"></textarea>
+</div>
+</div>
+
+<div class="panel panel-default">
+<div class="panel-heading">Variable</div>
+<div class="panel-body">
+<textarea ng-model="variable" class="form-control"></textarea>
+</div>
+</div>
+
+<div class="panel panel-default">
+<div class="panel-heading">Preview (client side binding)</div>
+<div class="panel-body" custom-bind-html="{{template}}" scope-params="{{variable}}"></div>
+</div>
+
+<div class="text-center">
+<button class="btn btn-primary" ng-click="send()">Send</button>
+<button class="btn btn-default" ng-click="sendPdf()">Get PDF</button>
+</div>
 Result:<br/> 
 {{result}}
 <hr>
@@ -20,9 +40,10 @@ Result:<br/>
 <button ng-click="loadTest()">Load Test</button>
 <hr/>
 <div ng-repeat="item in loadTestResult">{{item}}</div>
+<iframe id="downloader" style="display:none"></iframe>
 <script>
 var app = angular.module("myApp", ['ngSanitize']);
-app.controller("myCtrl", function($scope, $http,$sce) {
+app.controller("myCtrl", function($scope, $http, $sce, $compile) {
 	$scope.template = 'OrderId: {{orderId}}<br/>\
 OrderDate: {{orderDate|date:"short"}}<br/>\
 <br/>\
@@ -35,17 +56,30 @@ OrderDate: {{orderDate|date:"short"}}<br/>\
 "items": [\
 { "sku": "test1", "title": "Test Product 1" },\
 { "sku": "test2", "title": "Test Product 2" },\
-{ "sku": "test3", "title": "Test Product 3" },\
+{ "sku": "test3", "title": "Test Product 3" }\
 ]}';
 	$scope.result = 'not sent yet';
+
 	$scope.send = function(){
 		$http.post('/compile', {
 			template: $scope.template||"",
 			variable: $scope.variable
 		})
 			.then((resp)=>{
-				$scope.result = JSON.stringify(resp.data);
+				$scope.result = JSON.stringify(resp.data, null, 2);
 				$scope.resultHtml = $sce.trustAsHtml(resp.data.result);
+			});
+	}
+	$scope.sendPdf = function(){
+		$http.post('/compile-pdf', {
+			template: $scope.template||"",
+			variable: $scope.variable
+		})
+			.then((resp)=>{
+				$scope.result = JSON.stringify(resp.data, null, 2);
+
+                var iframe = document.getElementById('downloader');
+                iframe.src = resp.data.url;
 			});
 	}
 	$scope.loadTestResult = [];
@@ -67,6 +101,46 @@ OrderDate: {{orderDate|date:"short"}}<br/>\
 		}
 	}
 });
+angular.module('myApp').directive('customBindHtml', function ($compile, $http, $q, $templateCache) {
+    return {
+        restrict: 'EA',
+        transclude: false,
+        compile: function (elem) {
+            elem.html('');
+            return function ($scope, element) {
+                var scopeBound = false;
+                $scope.$watch('scopeParams', function () {
+                    if (!$scope.scopeParams)
+                        return;
+                    var params = $scope.scopeParams.replace(/\n/g, '').replace(/\r/g, '');
+                    try {
+                        params = JSON.parse(params);
+                    }
+                    catch (ex) {
+                        console.error(params);
+                    }
+                    $.extend($scope, params);
+                    if (scopeBound)
+                        $scope.$apply();
+                });
+                $scope.$watch('template', function () {
+                    element.html('');
+                    scopeBound = false;
+                    if (!$scope.template)
+                        return;
+                    element.html($scope.template);
+                    $compile(element.contents())($scope);
+                    scopeBound = true;
+                });
+            };
+        },
+        scope: {
+            template: '@?customBindHtml',
+            scopeParams: '@?',
+        }
+    };
+});
+//# sourceMappingURL=mvBindHtml.unstable.js.map
 </script>
 </body>
 </html>

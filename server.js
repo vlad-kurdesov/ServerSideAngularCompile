@@ -8,6 +8,7 @@ var fs = require('fs');
 var htmlmin = require('htmlmin');
 var bodyParser = require('body-parser')
 var open = require('open');
+var pdf = require('html-pdf');
 
 app.use(bodyParser.json());       // to support JSON-encoded bodies
 app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
@@ -33,7 +34,26 @@ app.get('/', function(req, res){
   res.send(indexPage);
 })
 
-app.post('/compile', function (req, res) {
+function removeFileWithDelay (filePath, delaySec){
+	setTimeout(function(){
+		fs.unlink(filePath);
+	}, delaySec*1000);
+}
+
+var buffer = {};
+
+function setBuffer(key, meta, timeInSec){
+	if(buffer[key]){
+		return false;
+	}
+
+	buffer[key] = meta;
+
+	setTimeout(function(){ buffer[key] = undefined; }, timeInSec * 1000);
+	return true;
+}
+
+function bindHtml(req, res, action){
   var start = Date.now();
   var tempFileName = (guid()+guid()).replace(/-/g,'')+".html";
   var tempFilePath = tempDir + "\\"+tempFileName;
@@ -64,17 +84,90 @@ app.post('/compile', function (req, res) {
       .replace(/(\ )?ng\-scope(\ )?/g,' ')
       .replace(/(\ )?ng\-repeat=\"[a-zA-Z0-9\(\)\ ]+(\ )?\"/g,' ');
     
-    res.send(JSON.stringify({
+    action({
       result: htmlmin(compiledTemplate),
       time: (Date.now()-start)
-    }));
+    });
 
-    fs.unlink(tempFilePath);
+    removeFileWithDelay(tempFilePath, 1);
   });
+}
+
+app.post('/compile', function (req, res) {
+	bindHtml(req, res, function(result){
+		res.send(JSON.stringify(result));
+	});
+})
+
+app.get('/get', function(req, res){
+	var data = buffer[req.query.resource||''];
+	if(!data){
+    	res.send(JSON.stringify({
+      		error: "Failed to generate pdf."
+    	}));
+  		return;	
+	}
+
+	res.setHeader('Cache-Control', 'private, s-maxage=0');			
+	res.setHeader('Content-Disposition', 'attachment;' + (data.filename?' filename='+data.filename:''));
+
+	if(data.mimeType){
+		res.setHeader('content-type', data.mimeType);			
+	}
+
+	if(data.stream){
+		var stream = data.stream;
+		stream.pipe(res);
+
+		stream.on('data', function(data) {
+			res.write(data);
+		});
+
+		stream.on('end', function() {
+			res.end();
+		});
+	}
+});
+
+app.post('/compile-pdf', function(req,res){
+	bindHtml(req, res, function(result){
+  		var start = Date.now();
+		html = result.result;
+		var options = { format: 'Letter' };
+		pdf.create(html, options).toStream(function(err, stream) {
+			if (err){
+            	res.send(JSON.stringify({
+	          		error: "Failed to generate pdf."
+	        	}));
+	      		return;
+			}
+
+			var meta = {
+				filename: 'document.pdf',
+				mimeType: 'application/pdf',
+				stream: stream
+			};
+			var time = Date.now() - start;
+
+			var downloadName = (guid()+guid()).replace(/-/g,'');
+			var downloadExpire = 5*60;
+			while(!setBuffer(downloadName, meta, downloadExpire)){
+				downloadName = (guid()+guid()).replace(/-/g,'');
+			}
+
+			res.send(JSON.stringify({
+				url: 'get?resource='+downloadName,
+				expire: Date.now()+(downloadExpire-1)*1000,
+				compileTime: result.time,
+				pdfCreateTime: time,
+				time: time + result.time
+			}));
+		});
+	});
 })
 
 app.listen(3000, function () {
-  console.log('Server launched on port 3000!')
+	console.log('Server launched on port 3000!')
 })
 
 open('http://127.0.0.1:3000');
