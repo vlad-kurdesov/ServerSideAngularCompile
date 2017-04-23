@@ -7,3 +7,9 @@ In order to start running this servers, simply run next statement in gitbash / c
 ```
 node server.js
 ```
+
+# Todo:
+- add versioning for different angularjs templates
+- research which templates engines could be added
+- create docker image + setup cluster to run multiple instances
+- figure out how to protect servers from anonymous use

@@ -46,18 +46,17 @@ app.post('/compile', function (req, res) {
   browser.visit('file://'+tempFilePath, function(a){
     var compiledTemplate = browser.html('body');
 
-    //if(!browser.assert.success()){
-
-    //  res.send(JSON.stringify({
-    //    error: "Error compiling template!"
-    //  }));
-
-    //  fs.unlink(tempFilePath);
-    //  return;  
-    //}
+    if(browser.document.title !== 'done'){
+      res.send(JSON.stringify({
+        error: "Failed to bind template! Error on js side."
+      }));
+      return;
+    }
 
     var index = compiledTemplate.indexOf('>');
     compiledTemplate = compiledTemplate.substr(index+2,compiledTemplate.length-index-11);
+
+    if(compiledTemplate == req.body.te)
 
     //clean up any angular specific code after binding
     compiledTemplate = compiledTemplate
