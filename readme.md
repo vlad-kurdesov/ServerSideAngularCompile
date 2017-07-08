@@ -3,7 +3,7 @@ Project was written for-fun during my visit to Dev Code Camp MN, 2017..
 
 This project provides website + Api (without any security) that shows how you could possibly use client-side binding mechanisms to generate template that you could send later via Email or SMS or any other delivery mechanism.
 
-Currently it works only with AngularJS 1.6.1 bindings. And relies on cndjs.cloudflare.com to load proper JavaScript libraries (it would be much faster to have copies of those files on your local drive if you have slow connection).
+Currently it works only with AngularJS 1.6.1 bindings.
 
 # Setup
 
