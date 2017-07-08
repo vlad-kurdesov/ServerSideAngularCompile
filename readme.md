@@ -3,7 +3,7 @@ Project was written for-fun during my visit to Dev Code Camp MN, 2017..
 
 This project provides website + Api (without any security) that shows how you could possibly use client-side binding mechanisms to generate template that you could send later via Email or SMS or any other delivery mechanism.
 
-Currently it works only with AngularJS 1.6.1 bindings.
+Currently it works with AngularJS 1.6.1. Although all AngularJs 1.x versions have same bindings, some directives are different with the way how scope is affected - so be in aware of it.
 
 # Setup
 
