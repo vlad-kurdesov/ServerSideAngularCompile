@@ -244,3 +244,4 @@ $RECYCLE.BIN/
 # Directories which start with '.'
 **/.*/
 src/Microsoft.CodeDom.Providers.DotNetCompilerPlatform.xml
+temp/*
