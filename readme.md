@@ -57,7 +57,7 @@ response:
 ```
 Note: url will start with "get?..." and you need to make GET request to /get?.. url in order to pull file.
 
-Simple html client that is hoster on server as well uses all those methods.
+Simple html client that is hosted on server as well uses all those methods.
 
 # Todo:
 - add versioning for different angularjs templates & research which template engines could be added
